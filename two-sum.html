@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AlgoVisualizer — Two Sum</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #6e7681;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --pointer-l: #58a6ff;
+    --pointer-r: #f78166;
+    --hash: #d29922;
+    --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 760px; width: 100%; }
+
+  .eyebrow {
+    color: var(--accent);
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  h1 { font-size: 28px; margin: 0 0 6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 160px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+
+  button {
+    background: var(--accent-dim);
+    color: #0d1117;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent); }
+  button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .tab.active { border-color: var(--accent); color: var(--accent); }
+
+  .stage { display: flex; justify-content: center; gap: 8px; margin: 24px 0; flex-wrap: wrap; min-height: 64px; }
+
+  .cell {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 6px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .cell.left { border-color: var(--pointer-l); }
+  .cell.right { border-color: var(--pointer-r); }
+  .cell.checking { border-color: var(--hash); }
+  .cell.found { background: rgba(63, 185, 80, 0.2); border-color: var(--accent); }
+
+  .label { position: absolute; top: -22px; font-size: 10px; letter-spacing: 1px; }
+  .label.l { color: var(--pointer-l); }
+  .label.r { color: var(--pointer-r); }
+  .label.h { color: var(--hash); }
+
+  .hashmap {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--muted);
+    display: none;
+  }
+  .hashmap.show { display: block; }
+  .hashmap .title { color: var(--hash); margin-bottom: 6px; }
+  .hashmap .entries { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hashmap .entry {
+    border: 1px solid var(--hash);
+    border-radius: 4px;
+    padding: 4px 8px;
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  .log { border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; color: var(--muted); min-height: 20px; }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Pattern 02 / Two Sum</div>
+  <h1>Find Two Numbers That Add Up to a Target</h1>
+  <div class="sub">Compare brute force (check every pair) vs hashmap (one pass, O(n)).</div>
+
+  <div class="panel">
+    <div class="tabs">
+      <button class="tab active" id="tabBrute">Brute Force — O(n²)</button>
+      <button class="tab" id="tabHash">HashMap — O(n)</button>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="inputArr" value="2,7,11,15" placeholder="Array, e.g. 2,7,11,15">
+      <input type="text" id="inputTarget" value="9" placeholder="Target" style="max-width:90px;">
+      <button id="runBtn">Run</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="hashmap" id="hashmapBox">
+      <div class="title">HashMap (value → index)</div>
+      <div class="entries" id="hashEntries"></div>
+    </div>
+
+    <div class="log" id="log">Pick a tab, set your array and target, then press Run.</div>
+
+    <div class="meta">
+      <span id="stepCount">Step 0</span>
+      <span id="complexity">Time: O(n²) &nbsp; Space: O(1)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const log = document.getElementById('log');
+const stepCount = document.getElementById('stepCount');
+const runBtn = document.getElementById('runBtn');
+const resetBtn = document.getElementById('resetBtn');
+const inputArr = document.getElementById('inputArr');
+const inputTarget = document.getElementById('inputTarget');
+const tabBrute = document.getElementById('tabBrute');
+const tabHash = document.getElementById('tabHash');
+const hashmapBox = document.getElementById('hashmapBox');
+const hashEntries = document.getElementById('hashEntries');
+const complexity = document.getElementById('complexity');
+
+let mode = 'brute';
+let arr = [];
+let running = false;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function render() {
+  stage.innerHTML = '';
+  arr.forEach((n) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = n;
+    stage.appendChild(cell);
+  });
+  hashmapBox.classList.remove('show');
+  hashEntries.innerHTML = '';
+}
+
+function setup() {
+  arr = inputArr.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  render();
+  stepCount.textContent = 'Step 0';
+  log.textContent = 'Pick a tab, set your array and target, then press Run.';
+}
+
+function setMode(m) {
+  mode = m;
+  tabBrute.classList.toggle('active', m === 'brute');
+  tabHash.classList.toggle('active', m === 'hash');
+  complexity.textContent = m === 'brute'
+    ? 'Time: O(n²)  Space: O(1)'
+    : 'Time: O(n)  Space: O(n)';
+  setup();
+}
+
+async function runBrute() {
+  const target = parseInt(inputTarget.value);
+  const cells = () => stage.querySelectorAll('.cell');
+  let step = 0;
+
+  for (let i = 0; i < arr.length; i++) {
+    for (let j = i + 1; j < arr.length; j++) {
+      step++;
+      cells().forEach(c => c.classList.remove('left', 'right'));
+      cells()[i].classList.add('left');
+      cells()[j].classList.add('right');
+      stepCount.textContent = `Step ${step}`;
+      log.textContent = `Step ${step}: check index ${i} (${arr[i]}) + index ${j} (${arr[j]}) = ${arr[i] + arr[j]} — target is ${target}`;
+      await sleep(500);
+
+      if (arr[i] + arr[j] === target) {
+        cells()[i].classList.add('found');
+        cells()[j].classList.add('found');
+        log.textContent = `Found! Index ${i} (${arr[i]}) + Index ${j} (${arr[j]}) = ${target}`;
+        stepCount.textContent = `Completed in ${step} step(s)`;
+        return;
+      }
+    }
+  }
+  log.textContent = 'No pair found that sums to target.';
+}
+
+async function runHash() {
+  const target = parseInt(inputTarget.value);
+  const cells = () => stage.querySelectorAll('.cell');
+  const map = {};
+  hashmapBox.classList.add('show');
+  let step = 0;
+
+  for (let i = 0; i < arr.length; i++) {
+    step++;
+    cells().forEach(c => c.classList.remove('checking', 'left'));
+    cells()[i].classList.add('checking');
+
+    const lbl = document.createElement('div');
+    lbl.className = 'label h';
+    lbl.textContent = 'i';
+    cells()[i].appendChild(lbl);
+
+    const need = target - arr[i];
+    stepCount.textContent = `Step ${step}`;
+    log.textContent = `Step ${step}: current = ${arr[i]}, need ${need} to reach target. Checking hashmap...`;
+    await sleep(500);
+
+    if (map[need] !== undefined) {
+      cells()[i].classList.add('found');
+      cells()[map[need]].classList.add('found');
+      log.textContent = `Found! Index ${map[need]} (${arr[map[need]]}) + Index ${i} (${arr[i]}) = ${target}`;
+      stepCount.textContent = `Completed in ${step} step(s)`;
+      return;
+    }
+
+    map[arr[i]] = i;
+    const entry = document.createElement('div');
+    entry.className = 'entry';
+    entry.textContent = `${arr[i]} → ${i}`;
+    hashEntries.appendChild(entry);
+    await sleep(400);
+  }
+  log.textContent = 'No pair found that sums to target.';
+}
+
+async function run() {
+  if (running) return;
+  running = true;
+  runBtn.disabled = true;
+  setup();
+  await sleep(200);
+  if (mode === 'brute') await runBrute();
+  else await runHash();
+  running = false;
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', run);
+resetBtn.addEventListener('click', setup);
+tabBrute.addEventListener('click', () => setMode('brute'));
+tabHash.addEventListener('click', () => setMode('hash'));
+
+setup();
+</script>
+
+</body>
+</html>
