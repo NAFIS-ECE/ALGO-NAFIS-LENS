@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AlgoVisualizer — Sliding Window</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #6e7681;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --window: #58a6ff;
+    --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 760px; width: 100%; }
+
+  .eyebrow { color: var(--accent); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  h1 { font-size: 28px; margin: 0 0 6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 160px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+
+  button {
+    background: var(--accent-dim);
+    color: #0d1117;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent); }
+  button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .stage { display: flex; justify-content: center; gap: 8px; margin: 30px 0; flex-wrap: wrap; min-height: 64px; }
+
+  .cell {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .cell.inwindow { border-color: var(--window); background: rgba(88, 166, 255, 0.1); }
+  .cell.best { border-color: var(--accent); background: rgba(63, 185, 80, 0.2); }
+
+  .windowlabel {
+    position: absolute;
+    top: -22px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 10px;
+    color: var(--window);
+    letter-spacing: 1px;
+  }
+
+  .sumbar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 10px;
+    font-size: 13px;
+  }
+  .sumbar .current { color: var(--window); }
+  .sumbar .best { color: var(--accent); }
+
+  .log { border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; color: var(--muted); min-height: 20px; }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Pattern 03 / Sliding Window</div>
+  <h1>Maximum Sum Subarray of Size K</h1>
+  <div class="sub">Slide a fixed-size window across the array — add the new element, drop the oldest, track the best sum.</div>
+
+  <div class="panel">
+    <div class="controls">
+      <input type="text" id="inputArr" value="2,1,5,1,3,2" placeholder="Array, e.g. 2,1,5,1,3,2">
+      <input type="text" id="inputK" value="3" placeholder="K" style="max-width:80px;">
+      <button id="runBtn">Run</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="sumbar">
+      <span class="current">Current sum: <span id="curSum">0</span></span>
+      <span class="best">Best sum: <span id="bestSum">0</span></span>
+    </div>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="log" id="log">Set your array and window size K, then press Run.</div>
+
+    <div class="meta">
+      <span id="stepCount">Step 0</span>
+      <span>Time: O(n) &nbsp; Space: O(1)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const log = document.getElementById('log');
+const stepCount = document.getElementById('stepCount');
+const runBtn = document.getElementById('runBtn');
+const resetBtn = document.getElementById('resetBtn');
+const inputArr = document.getElementById('inputArr');
+const inputK = document.getElementById('inputK');
+const curSumEl = document.getElementById('curSum');
+const bestSumEl = document.getElementById('bestSum');
+
+let arr = [];
+let running = false;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function render() {
+  stage.innerHTML = '';
+  arr.forEach((n) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = n;
+    stage.appendChild(cell);
+  });
+}
+
+function setup() {
+  arr = inputArr.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  render();
+  stepCount.textContent = 'Step 0';
+  curSumEl.textContent = '0';
+  bestSumEl.textContent = '0';
+  log.textContent = 'Set your array and window size K, then press Run.';
+}
+
+async function run() {
+  if (running) return;
+  const k = parseInt(inputK.value);
+  if (!k || k > arr.length || k < 1) {
+    log.textContent = `K must be between 1 and ${arr.length}.`;
+    return;
+  }
+  running = true;
+  runBtn.disabled = true;
+  setup();
+  await sleep(200);
+
+  const cells = () => stage.querySelectorAll('.cell');
+  let step = 0;
+  let windowSum = 0;
+  let bestSum = -Infinity;
+  let bestStart = 0;
+
+  for (let i = 0; i < k; i++) windowSum += arr[i];
+  bestSum = windowSum;
+
+  step++;
+  cells().forEach((c, idx) => c.classList.toggle('inwindow', idx < k));
+  curSumEl.textContent = windowSum;
+  bestSumEl.textContent = bestSum;
+  stepCount.textContent = `Step ${step}`;
+  log.textContent = `Step ${step}: initial window [0..${k - 1}] sum = ${windowSum}`;
+  await sleep(700);
+
+  for (let end = k; end < arr.length; end++) {
+    step++;
+    const start = end - k + 1;
+    windowSum += arr[end] - arr[end - k];
+
+    cells().forEach((c, idx) => c.classList.toggle('inwindow', idx >= start && idx <= end));
+    curSumEl.textContent = windowSum;
+    log.textContent = `Step ${step}: slide window to [${start}..${end}] → add ${arr[end]}, drop ${arr[end - k]} → sum = ${windowSum}`;
+    stepCount.textContent = `Step ${step}`;
+    await sleep(700);
+
+    if (windowSum > bestSum) {
+      bestSum = windowSum;
+      bestStart = start;
+      bestSumEl.textContent = bestSum;
+      log.textContent += ` — new best!`;
+    }
+    await sleep(300);
+  }
+
+  cells().forEach((c, idx) => {
+    c.classList.remove('inwindow');
+    if (idx >= bestStart && idx < bestStart + k) c.classList.add('best');
+  });
+
+  log.textContent = `Done. Max sum window starts at index ${bestStart}, sum = ${bestSum}`;
+  stepCount.textContent = `Completed in ${step} step(s)`;
+  running = false;
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', run);
+resetBtn.addEventListener('click', setup);
+
+setup();
+</script>
+
+</body>
+</html>
