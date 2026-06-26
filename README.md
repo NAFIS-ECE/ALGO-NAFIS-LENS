@@ -8,7 +8,7 @@ Interactive visualizer for classic interview/DSA patterns — currently covers t
 ## Patterns Covered
 - [x] Reverse String (Two Pointer) — O(n) time, O(1) space
 - [x] Two Sum
-- [ ] Sliding Window
+- [x] Sliding Window
 - [ ] Binary Search
 
 ## Why I built this
