@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AlgoVisualizer — Bubble Sort</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #6e7681;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --compare: #d29922;
+    --swap: #f78166;
+    --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 760px; width: 100%; }
+
+  .eyebrow { color: var(--accent); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  h1 { font-size: 28px; margin: 0 0 6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 160px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+
+  button {
+    background: var(--accent-dim);
+    color: #0d1117;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent); }
+  button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .stage {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    gap: 6px;
+    margin: 30px 0;
+    min-height: 180px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 4px;
+  }
+
+  .bar {
+    width: 36px;
+    background: var(--border);
+    border-radius: 4px 4px 0 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    font-size: 12px;
+    color: var(--text);
+    transition: height 0.2s, background 0.2s, transform 0.3s;
+    position: relative;
+  }
+  .bar span { margin-top: -18px; }
+  .bar.compare { background: var(--compare); }
+  .bar.swap { background: var(--swap); }
+  .bar.sorted { background: var(--accent); }
+
+  .log { border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; color: var(--muted); min-height: 20px; }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta span { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Pattern 05 / Sorting</div>
+  <h1>Bubble Sort</h1>
+  <div class="sub">Repeatedly compare adjacent elements and swap if out of order — largest values "bubble up" to the end each pass.</div>
+
+  <div class="panel">
+    <div class="controls">
+      <input type="text" id="inputArr" value="5,3,8,4,2,7,1,6" placeholder="Array, e.g. 5,3,8,4,2,7,1,6">
+      <button id="runBtn">Run</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="log" id="log">Set an array, then press Run.</div>
+
+    <div class="meta">
+      <span id="stepCount">Step 0</span>
+      <span>Time: O(n²) &nbsp; Space: O(1)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const log = document.getElementById('log');
+const stepCount = document.getElementById('stepCount');
+const runBtn = document.getElementById('runBtn');
+const resetBtn = document.getElementById('resetBtn');
+const inputArr = document.getElementById('inputArr');
+
+let arr = [];
+let running = false;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function render() {
+  stage.innerHTML = '';
+  const max = Math.max(...arr, 1);
+  arr.forEach((n) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar';
+    bar.style.height = `${(n / max) * 140 + 20}px`;
+    const span = document.createElement('span');
+    span.textContent = n;
+    bar.appendChild(span);
+    stage.appendChild(bar);
+  });
+}
+
+function setup() {
+  arr = inputArr.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  render();
+  stepCount.textContent = 'Step 0';
+  log.textContent = 'Set an array, then press Run.';
+}
+
+async function run() {
+  if (running) return;
+  running = true;
+  runBtn.disabled = true;
+  setup();
+  await sleep(200);
+
+  const bars = () => stage.querySelectorAll('.bar');
+  let step = 0;
+  const n = arr.length;
+
+  for (let i = 0; i < n - 1; i++) {
+    let swappedAny = false;
+    for (let j = 0; j < n - i - 1; j++) {
+      step++;
+      bars().forEach(b => b.classList.remove('compare', 'swap'));
+      bars()[j].classList.add('compare');
+      bars()[j + 1].classList.add('compare');
+      stepCount.textContent = `Step ${step}`;
+      log.textContent = `Step ${step}: compare ${arr[j]} and ${arr[j + 1]}`;
+      await sleep(450);
+
+      if (arr[j] > arr[j + 1]) {
+        [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+        swappedAny = true;
+        render();
+        bars()[j].classList.add('swap');
+        bars()[j + 1].classList.add('swap');
+        for (let k = 0; k <= n - i - 1; k++) bars()[k] && bars()[k].classList.contains('sorted');
+        log.textContent = `Step ${step}: swapped — ${arr[j]} and ${arr[j+1]} now in order`;
+        await sleep(450);
+      }
+    }
+    bars()[n - i - 1].classList.add('sorted');
+    if (!swappedAny) break;
+  }
+
+  bars().forEach(b => b.classList.add('sorted'));
+  log.textContent = `Done. Sorted array: ${arr.join(', ')}`;
+  stepCount.textContent = `Completed in ${step} step(s)`;
+  running = false;
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', run);
+resetBtn.addEventListener('click', setup);
+
+setup();
+</script>
+
+</body>
+</html>
