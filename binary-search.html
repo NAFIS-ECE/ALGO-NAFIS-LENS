@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AlgoVisualizer — Binary Search</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #6e7681;
+    --accent: #3fb950;
+    --accent-dim: #2ea043;
+    --low: #58a6ff;
+    --high: #f78166;
+    --mid: #d29922;
+    --mono: "JetBrains Mono", "Fira Code", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  .wrap { max-width: 760px; width: 100%; }
+
+  .eyebrow { color: var(--accent); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+  h1 { font-size: 28px; margin: 0 0 6px; font-weight: 600; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 24px; flex-wrap: wrap; }
+
+  input[type="text"] {
+    flex: 1;
+    min-width: 160px;
+    background: #0d1117;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 14px;
+  }
+  input[type="text"]:focus { outline: 2px solid var(--accent); }
+
+  button {
+    background: var(--accent-dim);
+    color: #0d1117;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  button:hover { background: var(--accent); }
+  button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+  .stage { display: flex; justify-content: center; gap: 8px; margin: 34px 0; flex-wrap: wrap; min-height: 64px; }
+
+  .cell {
+    width: 46px;
+    height: 46px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    position: relative;
+    transition: border-color 0.2s, background 0.2s, opacity 0.2s;
+  }
+  .cell.eliminated { opacity: 0.25; }
+  .cell.low { border-color: var(--low); }
+  .cell.high { border-color: var(--high); }
+  .cell.mid { border-color: var(--mid); background: rgba(210,153,34,0.15); }
+  .cell.found { border-color: var(--accent); background: rgba(63,185,80,0.2); opacity: 1; }
+
+  .label { position: absolute; top: -22px; font-size: 10px; letter-spacing: 1px; }
+  .label.low { color: var(--low); }
+  .label.high { color: var(--high); }
+  .label.mid { color: var(--mid); }
+
+  .log { border-top: 1px solid var(--border); padding-top: 16px; font-size: 13px; color: var(--muted); min-height: 20px; }
+
+  .meta {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .meta span { color: var(--accent); }
+
+  .note { font-size: 12px; color: var(--muted); margin-top: -16px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Pattern 04 / Divide & Conquer</div>
+  <h1>Binary Search</h1>
+  <div class="sub">Repeatedly cut the search space in half — only works on a sorted array.</div>
+
+  <div class="panel">
+    <div class="controls">
+      <input type="text" id="inputArr" value="2,4,7,9,12,18,23,29,35,41" placeholder="Sorted array">
+      <input type="text" id="inputTarget" value="23" placeholder="Target" style="max-width:90px;">
+      <button id="runBtn">Run</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+    <div class="note">Array must be sorted — that's the whole reason binary search works.</div>
+
+    <div class="stage" id="stage"></div>
+
+    <div class="log" id="log">Set a sorted array and target, then press Run.</div>
+
+    <div class="meta">
+      <span id="stepCount">Step 0</span>
+      <span>Time: O(log n) &nbsp; Space: O(1)</span>
+    </div>
+  </div>
+</div>
+
+<script>
+const stage = document.getElementById('stage');
+const log = document.getElementById('log');
+const stepCount = document.getElementById('stepCount');
+const runBtn = document.getElementById('runBtn');
+const resetBtn = document.getElementById('resetBtn');
+const inputArr = document.getElementById('inputArr');
+const inputTarget = document.getElementById('inputTarget');
+
+let arr = [];
+let running = false;
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function render() {
+  stage.innerHTML = '';
+  arr.forEach((n) => {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = n;
+    stage.appendChild(cell);
+  });
+}
+
+function setup() {
+  arr = inputArr.value.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)).sort((a,b) => a-b);
+  inputArr.value = arr.join(',');
+  render();
+  stepCount.textContent = 'Step 0';
+  log.textContent = 'Set a sorted array and target, then press Run.';
+}
+
+async function run() {
+  if (running) return;
+  running = true;
+  runBtn.disabled = true;
+  setup();
+  await sleep(200);
+
+  const target = parseInt(inputTarget.value);
+  const cells = () => stage.querySelectorAll('.cell');
+  let low = 0, high = arr.length - 1, step = 0;
+
+  while (low <= high) {
+    step++;
+    const mid = Math.floor((low + high) / 2);
+
+    cells().forEach((c, idx) => {
+      c.classList.remove('low', 'high', 'mid');
+      c.classList.toggle('eliminated', idx < low || idx > high);
+    });
+    cells()[low].classList.add('low');
+    cells()[high].classList.add('high');
+    cells()[mid].classList.add('mid');
+
+    cells()[low].querySelectorAll('.label').forEach(l => l.remove());
+    cells()[high].querySelectorAll('.label').forEach(l => l.remove());
+    cells()[mid].querySelectorAll('.label').forEach(l => l.remove());
+
+    const lowLbl = document.createElement('div'); lowLbl.className = 'label low'; lowLbl.textContent = 'low';
+    const highLbl = document.createElement('div'); highLbl.className = 'label high'; highLbl.textContent = 'high';
+    const midLbl = document.createElement('div'); midLbl.className = 'label mid'; midLbl.textContent = 'mid';
+    cells()[low].appendChild(lowLbl);
+    cells()[high].appendChild(highLbl);
+    cells()[mid].appendChild(midLbl);
+
+    stepCount.textContent = `Step ${step}`;
+    log.textContent = `Step ${step}: low=${low}, high=${high}, mid=${mid} → array[mid]=${arr[mid]}`;
+    await sleep(800);
+
+    if (arr[mid] === target) {
+      cells()[mid].classList.add('found');
+      log.textContent = `Found ${target} at index ${mid}!`;
+      stepCount.textContent = `Completed in ${step} step(s)`;
+      running = false;
+      runBtn.disabled = false;
+      return;
+    } else if (arr[mid] < target) {
+      log.textContent += ` — ${arr[mid]} < ${target}, search right half`;
+      low = mid + 1;
+    } else {
+      log.textContent += ` — ${arr[mid]} > ${target}, search left half`;
+      high = mid - 1;
+    }
+    await sleep(600);
+  }
+
+  log.textContent = `${target} not found in array.`;
+  stepCount.textContent = `Completed in ${step} step(s)`;
+  running = false;
+  runBtn.disabled = false;
+}
+
+runBtn.addEventListener('click', run);
+resetBtn.addEventListener('click', setup);
+
+setup();
+</script>
+
+</body>
+</html>
