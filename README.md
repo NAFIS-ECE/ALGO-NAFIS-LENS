@@ -10,9 +10,6 @@ ALGO-NAFIS-LENS turns abstract algorithm patterns into animated, step-by-step vi
 - CSS
 - JavaScript
 
-## 📸 Demo
-[Add a GIF here — record ~10 seconds of the reverse-string visualizer in action using ScreenToGif (Windows) or Kap (Mac), then drag it into this section]
-
 ## 🚀 How to run it
 1. Clone the repo:
    ```
