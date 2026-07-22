@@ -1,6 +1,6 @@
 # AlgoVisualizer
 
-Interactive visualizer for classic interview/DSA patterns — currently covers two-pointer reverse string, with more patterns coming.
+Interactive web app visualizing classic DSA patterns step-by-step, starting with an animated two-pointer string reversal, including live execution logs and time/space complexity breakdowns.
 
 ## Live Demo
 [link after you deploy]
